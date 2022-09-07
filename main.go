@@ -13,7 +13,9 @@ func main() {
 	// flags
 	caseSensitive := flag.Bool("c", false, "Using this flag will search with case sensitivity enabled")
 	recursive := flag.Bool("r", false, "Using this flag will search element on folder and on all of its sub-folders")
-	searchString := flag.String("s", "", "The program will use the specified search string")
+	searchString := flag.String("s", "", "The specified search string will be used to search files and directories")
+	displayFiles := flag.Bool("f", false, "Using this flag will search files")
+	displayDirectories := flag.Bool("d", false, "Using this flag will search directories")
 	flag.Parse()
 
 	currentPath, err := os.Getwd()
@@ -24,7 +26,7 @@ func main() {
 
 	// Get directory elements
 	var folderElements []os.DirEntry
-	err = getDirectoryContent(currentPath, *recursive, &folderElements)
+	err = getDirectoryContent(currentPath, *recursive, *displayFiles, *displayDirectories, &folderElements)
 	if err != nil {
 		fmt.Errorf(err.Error())
 		os.Exit(1)
@@ -60,16 +62,30 @@ func main() {
 	}
 }
 
-func getDirectoryContent(path string, recursive bool, elements *[]os.DirEntry) error {
+func getDirectoryContent(path string, recursive bool, displayFiles bool, displayDirectories bool, elements *[]os.DirEntry) error {
 	directoryContents, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
 
 	for _, element := range directoryContents {
-		*elements = append(*elements, element)
+		if !displayFiles && !displayDirectories {
+			*elements = append(*elements, element)
+		} else {
+			if displayFiles {
+				if !element.IsDir() {
+					*elements = append(*elements, element)
+				}
+			}
+			if displayDirectories {
+				if element.IsDir() {
+					*elements = append(*elements, element)
+				}
+			}
+		}
+
 		if element.IsDir() && recursive {
-			getDirectoryContent(filepath.Join(path, element.Name()), recursive, elements)
+			getDirectoryContent(filepath.Join(path, element.Name()), recursive, displayFiles, displayDirectories, elements)
 		}
 	}
 
