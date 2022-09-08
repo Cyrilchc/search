@@ -16,7 +16,7 @@ func main() {
 	tm.Clear()
 	currentPath, err := os.Getwd()
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
@@ -27,6 +27,10 @@ func main() {
 	displayFiles := flag.Bool("f", false, "Using this flag will search files")
 	displayDirectories := flag.Bool("d", false, "Using this flag will search directories")
 	path := flag.String("p", currentPath, "Using this flag will search in the provided path")
+	endsWith := flag.String("ew", "", "Using this flag will search element that ends with provided search string")
+	startsWith := flag.String("sw", "", "Using this flag will search element that starts with provided search string")
+	verbose := flag.Bool("v", false, "Using this flag will show more information")
+
 	flag.Parse()
 
 	if *path != "" {
@@ -48,30 +52,42 @@ func main() {
 
 	// Search
 	var searchedElements []os.DirEntry
-	if *searchString != "" {
-		for _, element := range folderElements {
-			elementStr := ""
-			if *caseSensitive {
-				elementStr = element.Name()
-			} else {
-				elementStr = strings.ToLower(element.Name())
-			}
-			if strings.Contains(elementStr, *searchString) {
-				searchedElements = append(searchedElements, element)
-			}
+	for _, element := range folderElements {
+		elementStr := ""
+		if *caseSensitive {
+			elementStr = element.Name()
+		} else {
+			elementStr = strings.ToLower(element.Name())
 		}
-	} else {
-		for _, element := range folderElements {
+
+		if *endsWith != "" && strings.HasSuffix(elementStr, *endsWith) {
+			searchedElements = append(searchedElements, element)
+		} else if *startsWith != "" && strings.HasPrefix(elementStr, *startsWith) {
+			searchedElements = append(searchedElements, element)
+		} else if *endsWith == "" && *startsWith == "" && strings.Contains(elementStr, *searchString) {
 			searchedElements = append(searchedElements, element)
 		}
 	}
 
 	// Printing
 	for _, element := range searchedElements {
-		if element.IsDir() {
-			color.Cyan(element.Name())
+		var formattedResult = ""
+		elInfo, _ := element.Info()
+
+		if *verbose {
+			if element.IsDir() {
+				formattedResult = fmt.Sprintf("%s    %s    %s", element.Name(), elInfo.Mode().Perm(), elInfo.ModTime())
+			} else {
+				formattedResult = fmt.Sprintf("%s    %v bytes    %s    %s", element.Name(), elInfo.Size(), elInfo.Mode().Perm(), elInfo.ModTime())
+			}
 		} else {
-			color.White(element.Name())
+			formattedResult = element.Name()
+		}
+
+		if element.IsDir() {
+			color.Cyan(formattedResult)
+		} else {
+			color.White(formattedResult)
 		}
 	}
 }
@@ -85,7 +101,7 @@ func getDirectoryContent(path string, recursive bool, displayFiles bool, display
 	for _, element := range directoryContents {
 		searchedFiles++
 		tm.MoveCursor(1, 1)
-		_, err := tm.Printf("Searched elements : %v", searchedFiles)
+		_, err := tm.Println("Searched elements :", searchedFiles)
 		if err != nil {
 			return err
 		}
