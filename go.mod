@@ -2,7 +2,10 @@ module search
 
 go 1.19
 
-require github.com/fatih/color v1.13.0
+require (
+	github.com/buger/goterm v1.0.4
+	github.com/fatih/color v1.13.0
+)
 
 require (
 	github.com/mattn/go-colorable v0.1.9 // indirect
